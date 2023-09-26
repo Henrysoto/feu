@@ -50,6 +50,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::process::exit(1);                
             }
         };
+        if width < 1 || height < 1 || (width < height && width == 1) {
+            println!("error");
+            std::process::exit(1);
+        }
         for k in 0..height {
             if k == 0 || k == height-1 {
                 for i in 0..width {
