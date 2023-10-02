@@ -27,6 +27,7 @@ Vous devez gérer les potentiels problèmes d’arguments et de lecture de fichi
 */
 
 use std::collections::VecDeque;
+
 fn format_file_input(input: String) -> Vec<String> {
     let mut output: Vec<String> = Vec::new();
     for elm in input.trim().split('\n') {
