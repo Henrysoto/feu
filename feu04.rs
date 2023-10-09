@@ -29,215 +29,108 @@ Afficher error et quitter le programme en cas de problèmes d’arguments.
 
 use std::collections::VecDeque;
 
-fn format_file_input(input: String) -> Vec<String> {
-    let mut output: Vec<String> = Vec::new();
-    for elm in input.trim().split('\n') {
-        output.push(elm.trim().to_string());
-    }
-    output
-}
+const DOT: char = '.';
+const EMPTY: usize = 0;
+const N: usize = 9;
 
-// Must be a standard 9x9 board
-fn check_board_length(input: &Vec<&str>) -> bool {
-    if input.len() == 9 {
-        for row in input.iter() {
-            if row.chars().count() != 9 {
-                return false;
-            }
-        }
-    } else {
-        return false;
+fn format_file_input(input: String) -> Vec<Vec<usize>> {
+    let mut strarray: Vec<Vec<String>> = Vec::new();
+    for (i, elm) in input.trim().split('\n').enumerate() {
+        strarray.push(Vec::new());
+        strarray[i].push(elm.trim().to_string());
     }
 
-    true
-}
-
-fn subdiv_board(input: Vec<&str>) -> Vec<Vec<String>> {
-    let mut output: Vec<Vec<String>> = Vec::new();
-    
-    let mut i: usize = 0;
-    let mut k: usize = 3;
-    let mut lap: usize = 0;
-
-    let mut str_arr: Vec<String> = Vec::new();
-    let mut str = String::new();
-
-    while output.len() != 9 {
-        if i % 3 == 0 && i > 0 {
-            if k == 9 {
-                k = 3;
-                lap += 3;
-                i = lap;
-            } else {
-                k += 3;
-                i = lap;
-            }
-            output.push(str_arr.clone());
-            str_arr.clear();
-        }
-
-        if i == 9 {
-            str.push_str(&input[i-1][k-3..k]);
-        } else {
-            str.push_str(&input[i][k-3..k]);
-        }
-        str_arr.push(str.clone());
-        str.clear();
-
-        i += 1;
-    }
-    
-    output
-}
-
-fn problem_count(input: &Vec<Vec<String>>) -> usize {
-    let mut count = 0;
-    for region in input.iter() {          // chaque tableau de String
-        for str in region.iter() { 
+    let mut output: Vec<Vec<usize>> = Vec::new();
+    for (i, elm) in strarray.iter().enumerate() {
+        output.push(Vec::new());
+        for str in elm.iter() {
             for chr in str.chars() {
-                if chr == '.' {
-                    count += 1;
+                if chr == DOT {
+                    output[i].push(0);
+                } else {
+                    output[i].push(chr.to_digit(10).unwrap() as usize);
                 }
             }
         }
     }
-
-    count
+    output
 }
 
-fn solve_all(input: &Vec<Vec<String>>) -> Option<Vec<Vec<String>>> {
-
-    /*  La règle du jeu  : 
-            chaque ligne, colonne et région ne doit contenir qu’une seule fois tous les chiffres de un à neuf.
-            Formulé autrement, chacun de ces ensembles doit contenir tous les chiffres de un à neuf.
-        La solution :
-            si '.' verifier verticalement ainsi qu'horizontalement qu'un chiffre X 
-            allant de 1..9 ne soit pas present, si c'est le cas, vérifier la région autour de '.'
-            une région est un carré 3x3, si le chiffre X n'est pas présent c'est le bon !
-    */
-
-    let mut output: Vec<Vec<String>> = input.clone();
-    let mut count = 0;
-    for (i, region) in input.iter().enumerate() {
-        for (k, str) in region.iter().enumerate() {
-            for (x, chr) in str.chars().enumerate() {
-                if chr == '.' {
-                    for rndm in '1'..='9' {
-                        if !str.contains(rndm) {
-                            // Check region (3x3)
-                            if solve_region(&output[i], rndm) {
-                                // Check line
-                                if solve_row(&output, i, k, rndm) {
-                                    // Check col
-                                    if solve_col(&output, i, x, rndm) {
-                                        let mut answer = String::new();
-                                        for (pos, rhc) in output[i][k].chars().enumerate() {
-                                            if pos == x {
-                                                answer.push(rndm);
-                                            } else {
-                                                answer.push(rhc);
-                                            }
-                                        }
-                                        output[i][k] = answer;
-                                        count += 1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+fn find_empty_col(grid: &mut Vec<Vec<usize>>) -> Option<(usize, usize)> {
+    for row in 0..N {
+        for col in 0..N {
+            if grid[row][col] == EMPTY {
+                return Some((row, col));
             }
         }
     }
 
-    if count == problem_count(input) {
-        Some(output)
+    None
+}
+
+fn is_input_valid(grid: &mut Vec<Vec<usize>>, row: usize, col: usize, num: usize) -> bool {
+    return !row_exists(grid, row, num) 
+        && !col_exists(grid, col, num) 
+        && !region_exists(grid, row - row % 3, col - col % 3, num) 
+        && grid[row][col] == EMPTY;
+}
+
+fn row_exists(grid: &mut Vec<Vec<usize>>, row: usize, num: usize) -> bool {
+    for col in 0..N {
+        if grid[row][col] == num {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn col_exists(grid: &mut Vec<Vec<usize>>, col: usize, num: usize) -> bool {
+    for row in 0..N {
+        if grid[row][col] == num {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn region_exists(grid: &mut Vec<Vec<usize>>, start_row: usize, start_col: usize, num: usize) -> bool {
+    for row in 0..3 {
+        for col in 0..3 {
+            if grid[row + start_row][col + start_col] == num {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+fn solve_grid(grid: &mut Vec<Vec<usize>>) -> bool {
+    if let Some((row, col)) = find_empty_col(grid) {
+        for num in 1..=9 {
+            if is_input_valid(grid, row, col, num) {
+                grid[row][col] = num;
+                if solve_grid(grid) {
+                    return true;
+                }
+                grid[row][col] = EMPTY;
+            }
+        }
+        false
     } else {
-        None
+        true
     }
-    
 }
 
-fn solve_region(region: &Vec<String>, number: char) -> bool {
-    
-    let mut checkmark = true;
-    for str in region.iter() {
-        if str.contains(number) {
-            checkmark = false;
-        }
-    } 
-    
-    checkmark
-}
-
-fn solve_row(input: &Vec<Vec<String>>, region_row: usize, line_row: usize, number: char) -> bool {
-
-    let mut checkmark = true;
-    let mut i: usize = region_row;
-
-    while checkmark {
-        if i % 3 == 0 {
-            for region in input[i..i+2].iter() {
-                for (line, str) in region.iter().enumerate() {
-                    if line == line_row {
-                        if str.contains(number) {
-                            checkmark = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            break;
-        } else {
-            i -= 1;
-        }
-    }
-
-    checkmark
-}
-
-fn solve_col(input: &Vec<Vec<String>>, region_idx: usize, col: usize, number: char) -> bool {
-    
-    let mut checkmark = true;
-    let offset: usize = region_idx % 3;
-    
-    for (pos, region) in input.iter().enumerate() {
-        if pos % 3 == offset {
-            for str in region.iter() {
-                for (y, chr) in str.chars().enumerate() {
-                    if y == col {
-                        if chr == number {
-                            checkmark = false;
-                        }
-                    } 
-                }
-            }
-        }
-    }
-
-    checkmark
-}
-
-fn print_solution(input: &Vec<Vec<String>>) {
-    let mut lap: usize = 0;
-    let mut i: usize = 0;
-
-    print!("\n");
-    loop {
-        for region in input[0+i..=2+i].iter() {
-            print!("{}", region[lap]);
+fn print_grid(grid: Vec<Vec<usize>>) {
+    for row in 0..N {
+        for col in 0..N {
+            print!("{} ", grid[row][col]);
         }
         print!("\n");
-        lap += 1;
-        if lap % 3 == 0 {
-            lap = 0;
-            i += 3;
-        }
-        if i == 9 {
-            break;
-        }
     }
-    
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -247,40 +140,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(fn1) = args.pop_front() {
             if let Ok(board) = std::fs::read_to_string(fn1) {
                 
-                // Board
-                let pattern = format_file_input(board.clone());
-                let pattern: Vec<&str> = pattern.iter().map(|x| x.as_ref()).collect();
-                
-                // Make sure board is standard 9*9 square
-                if check_board_length(&pattern) {
+                // Grid
+                let mut grid = format_file_input(board.clone());
 
-                    // divides board to make regions (3*3)
-                    let div_board = subdiv_board(pattern);
+                print_grid(grid.clone());
+                println!("-----------------");
 
-                    // Find solutions
-                    if let Some(solution) = solve_all(&div_board) {
-                        print!("{}\n---------", board);
-                        print_solution(&solution);
-                    } else {
-                        println!("error (solving board)");
-                        std::process::exit(1);
-                    }
+                if solve_grid(&mut grid) {
+                    print_grid(grid);
                 } else {
-                    println!("error (board dimensions)");
-                    std::process::exit(1);
+                    println!("no solution");
                 }
+                
             } else {
-                println!("error (reading file)");
+                println!("error reading file");
                 std::process::exit(1);
             }
         } else {
-            println!("error (file doesn't exist)");
+            println!("error");
             std::process::exit(1);
         }
-    } else {
-        println!("error");
-        std::process::exit(1);
     }
-    
+
     Ok(())
 }

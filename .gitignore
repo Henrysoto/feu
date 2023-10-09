@@ -28,6 +28,7 @@ Cargo.toml
 Cargo.lock
 target/
 src/
+sudoku01.txt
 
 
 # Added by cargo
