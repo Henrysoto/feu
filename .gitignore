@@ -29,6 +29,7 @@ Cargo.lock
 target/
 src/
 sudoku01.txt
+feu05_generator
 
 
 # Added by cargo
