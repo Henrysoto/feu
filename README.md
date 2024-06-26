@@ -1,4 +1,4 @@
-## Coding Accelerator - Épreuve du Feu
+## Problèmes algorithmiques
 
 ### Build
 ```
